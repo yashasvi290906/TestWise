@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestWise — Bayesian Investigation & Contingent Planning Workbench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="theme-light">
+  <div class="app-container">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">TestWise</span>
+            <span class="brand-subtitle">Bayesian Decision Science</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard" id="nav-dashboard">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>Home / Overview</span>
+        </button>
+        <button class="nav-item" data-view="workbench" id="nav-workbench">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          <span>Workbench</span>
+        </button>
+        <button class="nav-item" data-view="plan-inspector" id="nav-plan-inspector">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>Plan Inspector</span>
+        </button>
+        <button class="nav-item" data-view="algorithm-lab" id="nav-algorithm-lab">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+          <span>Algorithm Lab</span>
+        </button>
+        <button class="nav-item" data-view="evaluation" id="nav-evaluation">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <span>Evaluation</span>
+        </button>
+        <button class="nav-item" data-view="ai-lab" id="nav-ai-lab">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span>AI Concepts Lab</span>
+        </button>
+        <button class="nav-item" data-view="settings" id="nav-settings">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Model Spec</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="glass-info-card">
+          <div class="info-card-header">
+            <span class="info-icon">💡</span>
+            <span class="info-title">Scientific Workbench</span>
+          </div>
+          <p class="info-desc">Sequential Bayesian inference with cost-aware Bellman contingent planning.</p>
+          <div class="info-meta">
+            <span class="version-tag">v1.0.0</span>
+            <span class="status-dot-active">● Active</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="main-content">
+      <!-- TOP NAV BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 class="page-title" id="page-title">Executive Command Center</h1>
+          <span class="page-subtitle" id="page-subtitle">Probabilistic reasoning under resource constraints</span>
+        </div>
+        <div class="topbar-right">
+          <div class="system-status-pill">
+            <span class="pulse-indicator"></span>
+            <span id="backend-status-text">Backend Connected</span>
+          </div>
+          <div class="user-pill">
+            <div class="user-avatar">T</div>
+            <span class="user-name">TestWise Researcher</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- VIEW CONTAINER -->
+      <div class="view-content" id="view-content">
+        <!-- ==================== VIEW 1: DASHBOARD / OVERVIEW ==================== -->
+        <section class="view-section active" id="view-dashboard">
+          <!-- Top Row: Welcome Banner & KPI Summary Cards -->
+          <div class="dashboard-hero-grid">
+            <div class="welcome-banner card">
+              <div class="banner-content">
+                <span class="tagline">WELCOME TO TESTWISE</span>
+                <h2>Make Better Decisions with Probabilistic Reasoning</h2>
+                <p>Explore sequential investigation strategies, compare heuristic policies against Bellman contingent plans, and audit decision outcomes on identical synthetic cases.</p>
+                <div class="banner-actions">
+                  <button class="btn btn-primary" id="btn-banner-new-episode">
+                    <span>Start New Episode</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+                  <button class="btn btn-secondary" id="btn-banner-view-eval">View Evaluation</button>
+                </div>
+              </div>
+              <div class="banner-graphic">
+                <div class="graphic-orb"></div>
+                <div class="graphic-card">
+                  <span class="gc-label">Information Gain</span>
+                  <span class="gc-value">+0.49 bits</span>
+                  <div class="gc-spark"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- KPI Cards Grid -->
+            <div class="kpi-grid">
+              <div class="kpi-card card">
+                <div class="kpi-icon-wrap icon-budget">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                </div>
+                <div class="kpi-body">
+                  <span class="kpi-label">Total Budget</span>
+                  <div class="kpi-number" id="kpi-total-budget">$10.00</div>
+                  <span class="kpi-subtext" id="kpi-initial-budget-sub">Initial allocation</span>
+                </div>
+              </div>
+
+              <div class="kpi-card card">
+                <div class="kpi-icon-wrap icon-available">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4z"></path></svg>
+                </div>
+                <div class="kpi-body">
+                  <span class="kpi-label">Available Budget</span>
+                  <div class="kpi-number" id="kpi-available-budget">$10.00</div>
+                  <span class="kpi-subtext" id="kpi-remaining-budget-sub">100% remaining</span>
+                </div>
+              </div>
+
+              <div class="kpi-card card">
+                <div class="kpi-icon-wrap icon-steps">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                </div>
+                <div class="kpi-body">
+                  <span class="kpi-label">Steps Taken</span>
+                  <div class="kpi-number" id="kpi-steps-taken">0 / 6</div>
+                  <span class="kpi-subtext">Investigations</span>
+                </div>
+              </div>
+
+              <div class="kpi-card card">
+                <div class="kpi-icon-wrap icon-confidence">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+                </div>
+                <div class="kpi-body">
+                  <span class="kpi-label">Confidence</span>
+                  <div class="kpi-number" id="kpi-confidence">0.400</div>
+                  <span class="kpi-subtext">Current Max Posterior</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Middle Row: Belief Distribution Chart & Recent History -->
+          <div class="dashboard-mid-grid">
+            <div class="card chart-card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Current Belief Distribution</h3>
+                  <span class="card-desc">Posterior probability across candidate hypotheses P(H | observations)</span>
+                </div>
+                <div class="badge badge-subtle" id="entropy-badge">Entropy: 1.846 bits</div>
+              </div>
+              <div class="card-body">
+                <div class="chart-container" id="overview-belief-chart">
+                  <!-- Rendered via SVG -->
+                </div>
+              </div>
+            </div>
+
+            <div class="card history-summary-card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Recent Investigation Activity</h3>
+                  <span class="card-desc">Chronological evidence audit trail</span>
+                </div>
+                <button class="btn-text" id="btn-view-all-history">View Workbench →</button>
+              </div>
+              <div class="card-body">
+                <div class="timeline-list" id="overview-timeline-list">
+                  <div class="empty-state">
+                    <span class="empty-icon">⏳</span>
+                    <p>No investigations performed yet. Start an episode below to begin.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: 3-Column Quick Interactive Panels matching reference design -->
+          <div class="dashboard-panels-grid">
+            <!-- 1. Configure Episode Panel -->
+            <div class="card config-panel">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <span class="step-num">1.</span>
+                  <h3 class="card-title">Configure Episode</h3>
+                </div>
+                <button class="btn-icon" id="btn-config-reset" title="Reset defaults">↺</button>
+              </div>
+              <div class="card-body">
+                <form id="form-episode-config" onsubmit="return false;">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="cfg-seed">Episode Seed</label>
+                      <input type="number" id="cfg-seed" value="42" min="0" class="input-field">
+                    </div>
+                    <div class="form-group">
+                      <label for="cfg-budget">Initial Budget ($)</label>
+                      <input type="number" id="cfg-budget" value="10.0" step="0.5" min="1.0" class="input-field">
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="cfg-policy">Decision Policy</label>
+                      <select id="cfg-policy" class="select-field">
+                        <option value="greedy_information_gain">Greedy Information Gain</option>
+                        <option value="cheapest_first">Cheapest First</option>
+                        <option value="contingent_optimal">Contingent Optimal (Bellman)</option>
+                        <option value="fixed_order">Fixed Order</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="cfg-threshold">Confidence Threshold</label>
+                      <input type="number" id="cfg-threshold" value="0.90" step="0.05" min="0.5" max="0.99" class="input-field">
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-block" id="btn-start-episode">
+                    <span>Start Episode →</span>
+                  </button>
+                </form>
+
+                <div class="quick-stats-grid">
+                  <div class="quick-stat-box">
+                    <span class="qs-num" id="qs-hypotheses">4</span>
+                    <span class="qs-label">Hypotheses</span>
+                  </div>
+                  <div class="quick-stat-box">
+                    <span class="qs-num" id="qs-investigations">6</span>
+                    <span class="qs-label">Investigations</span>
+                  </div>
+                  <div class="quick-stat-box">
+                    <span class="qs-num" id="qs-min-cost">$1.00</span>
+                    <span class="qs-label">Min Cost</span>
+                  </div>
+                  <div class="quick-stat-box">
+                    <span class="qs-num" id="qs-max-cost">$5.00</span>
+                    <span class="qs-label">Max Cost</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Investigation Workbench Preview -->
+            <div class="card workbench-preview-panel">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <span class="step-num">2.</span>
+                  <h3 class="card-title">Investigation Workbench</h3>
+                </div>
+                <span class="status-badge badge-active" id="wb-status-badge">● Ready</span>
+              </div>
+              <div class="card-body">
+                <div class="panel-tabs">
+                  <button class="panel-tab active" data-tab="candidates">Candidates</button>
+                  <button class="panel-tab" data-tab="beliefs">Beliefs</button>
+                  <button class="panel-tab" data-tab="details">Decision</button>
+                </div>
+
+                <div class="tab-content" id="tab-candidates">
+                  <div class="table-container small-table">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Test</th>
+                          <th>Cost</th>
+                          <th>Info Gain</th>
+                          <th>Bits/$</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="workbench-candidates-tbody">
+                        <tr><td colspan="5" class="text-center text-muted">Initialize episode to load candidates.</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="tab-content hidden" id="tab-beliefs">
+                  <div id="workbench-beliefs-preview" class="belief-preview-list"></div>
+                </div>
+
+                <div class="tab-content hidden" id="tab-details">
+                  <div class="decision-rationale-box" id="workbench-decision-box">
+                    <span class="dr-title">Current Decision Rationale</span>
+                    <p class="dr-text" id="workbench-decision-summary">Start an episode to generate decision rationales.</p>
+                  </div>
+                </div>
+
+                <div class="workbench-action-footer">
+                  <button class="btn btn-secondary" id="btn-step-policy">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span>Step (Policy Auto)</span>
+                  </button>
+                  <button class="btn btn-outline" id="btn-reset-episode">Reset</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Contingent-Plan Inspector Preview -->
+            <div class="card plan-preview-panel">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <span class="step-num">3.</span>
+                  <h3 class="card-title">Contingent-Plan Inspector</h3>
+                </div>
+                <div class="tree-legend">
+                  <span class="leg-dot leg-planned">● Planned</span>
+                  <span class="leg-dot leg-outcome">● Outcome</span>
+                  <span class="leg-dot leg-terminal">● Stop</span>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="plan-tree-preview-container" id="plan-tree-preview">
+                  <div class="empty-state">
+                    <button class="btn btn-secondary" id="btn-solve-plan-preview">Solve Optimal Plan</button>
+                  </div>
+                </div>
+                <div class="plan-meta-footer">
+                  <span id="plan-preview-expansions">Expansions: --</span>
+                  <span id="plan-preview-status">Status: Idle</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 2: FULL INVESTIGATION WORKBENCH ==================== -->
+        <section class="view-section" id="view-workbench">
+          <div class="section-hero">
+            <h2>Investigation Workbench</h2>
+            <p>Conduct step-by-step sequential investigations, compare information gains, and watch Bayesian posterior updates respond to observation evidence.</p>
+          </div>
+
+          <div class="workbench-full-layout">
+            <!-- Left: Candidate Action Matrix -->
+            <div class="card wb-left-col">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Candidate Investigations Matrix</h3>
+                  <span class="card-desc">Shannon information gain and efficiency computed on current belief simplex</span>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Investigation</th>
+                        <th>Cost</th>
+                        <th>Exp. Info Gain (bits)</th>
+                        <th>Efficiency (bits/$)</th>
+                        <th>Likely Outcomes</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="full-workbench-candidates-tbody">
+                      <tr><td colspan="6" class="text-center text-muted">No active episode.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="wb-stepper-control">
+                  <div class="stepper-left">
+                    <button class="btn btn-primary" id="btn-full-step-policy">Step Policy</button>
+                    <button class="btn btn-secondary" id="btn-full-run-complete">Run to Completion</button>
+                    <button class="btn btn-outline" id="btn-full-reset">Reset Episode</button>
+                  </div>
+                  <div class="stepper-right">
+                    <span class="badge badge-info" id="full-wb-terminal-badge">Active</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Belief Before/After & Decision Explanation -->
+            <div class="wb-right-col">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Prior vs. Posterior Beliefs</h3>
+                  <span class="card-desc">Belief state transition P_t(H) after latest evidence</span>
+                </div>
+                <div class="card-body">
+                  <div id="full-wb-belief-compare-chart" class="chart-container" style="height: 220px;"></div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Decision Explanation & Rationale</h3>
+                  <span class="card-desc">Direct explanation generated by the decision policy</span>
+                </div>
+                <div class="card-body">
+                  <div class="rationale-card" id="full-wb-rationale-box">
+                    <div class="rc-header">
+                      <span class="rc-policy-tag" id="rc-policy-tag">greedy_information_gain</span>
+                      <span class="rc-status-tag" id="rc-status-tag">Exploring</span>
+                    </div>
+                    <p class="rc-summary" id="rc-summary">Awaiting action...</p>
+                    <div class="rc-metrics-grid">
+                      <div class="rc-metric">
+                        <span class="rc-metric-lbl">Remaining Budget</span>
+                        <span class="rc-metric-val" id="rc-rem-budget">$10.00</span>
+                      </div>
+                      <div class="rc-metric">
+                        <span class="rc-metric-lbl">Current Entropy</span>
+                        <span class="rc-metric-val" id="rc-entropy">1.846 bits</span>
+                      </div>
+                      <div class="rc-metric">
+                        <span class="rc-metric-lbl">Current Max P</span>
+                        <span class="rc-metric-val" id="rc-max-p">0.400</span>
+                      </div>
+                      <div class="rc-metric">
+                        <span class="rc-metric-lbl">Stop Reason</span>
+                        <span class="rc-metric-val" id="rc-stop-reason">None</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Hidden Truth Card (Isolated until terminal) -->
+                  <div class="hidden-truth-container" id="hidden-truth-container">
+                    <div class="truth-locked">
+                      <span>🔒 Ground Truth Isolated</span>
+                      <small>Hidden synthetic hypothesis is strictly concealed until episode termination.</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- History Audit Log -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Chronological History</h3>
+                  <span class="card-desc">Full step audit trail for current episode</span>
+                </div>
+                <div class="card-body">
+                  <div class="full-history-log" id="full-wb-history-log">
+                    <p class="text-muted text-center">No steps taken yet.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 3: CONTINGENT-PLAN INSPECTOR ==================== -->
+        <section class="view-section" id="view-plan-inspector">
+          <div class="section-hero">
+            <div class="hero-left">
+              <h2>Contingent-Plan Inspector</h2>
+              <p>Explore the genuine Bellman contingent decision tree. The optimal next investigation branches conditionally on intermediate observed outcomes.</p>
+            </div>
+            <div class="hero-right">
+              <button class="btn btn-primary" id="btn-solve-full-plan">Recompute Contingent Plan</button>
+            </div>
+          </div>
+
+          <div class="plan-inspector-workspace">
+            <!-- Tree Canvas & Controls -->
+            <div class="card plan-tree-card">
+              <div class="card-header">
+                <div class="tree-controls-bar">
+                  <div class="tc-group">
+                    <span class="tc-label">Status:</span>
+                    <span class="badge badge-success" id="tree-status-badge">Complete</span>
+                  </div>
+                  <div class="tc-group">
+                    <span class="tc-label">Search Expansions:</span>
+                    <span class="mono-stat" id="tree-expansions-val">552 states</span>
+                  </div>
+                  <div class="tc-group">
+                    <span class="tc-label">Root Expected Utility:</span>
+                    <span class="mono-stat" id="tree-utility-val">0.4838</span>
+                  </div>
+                </div>
+                <div class="tree-legend">
+                  <span class="leg-dot leg-root">● Start / Budget</span>
+                  <span class="leg-dot leg-action">● Investigation</span>
+                  <span class="leg-dot leg-outcome">● Outcome Branch</span>
+                  <span class="leg-dot leg-terminal">● Stop / Terminal Decision</span>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="tree-canvas-scroll" id="plan-tree-canvas-container">
+                  <!-- Interactive SVG Hierarchical Tree rendered here -->
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); padding: 6px 12px; text-align: right; border-top: 1px solid var(--border-light);">
+                  Visualized depth ≤ 3. All subtrees remain fully computed in memory and inspectable in the Node Inspector.
+                </div>
+              </div>
+            </div>
+
+            <!-- Selected Node Inspector Panel -->
+            <div class="card plan-node-inspector">
+              <div class="card-header">
+                <h3 class="card-title">Node Inspector</h3>
+                <span class="card-desc">Click any node in the tree to examine exact belief states and expected values</span>
+              </div>
+              <div class="card-body" id="node-inspector-body">
+                <div class="empty-state">
+                  <span class="empty-icon">👆</span>
+                  <p>Click any node or branch in the tree above to inspect its posterior distribution and branch utility.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 4: ALGORITHM LAB ==================== -->
+        <section class="view-section" id="view-algorithm-lab">
+          <div class="section-hero">
+            <h2>Algorithm Lab</h2>
+            <p>Empirical and mathematical comparison of all four investigation policies. Inspect algorithmic trade-offs between myopic heuristics and full Bellman lookahead.</p>
+          </div>
+
+          <div class="algo-lab-grid">
+            <!-- Policy Comparison Table -->
+            <div class="card algo-table-card">
+              <div class="card-header">
+                <h3 class="card-title">Policy Characteristics & Benchmark Performance</h3>
+                <span class="card-desc">Evaluated on identical synthetic cases</span>
+              </div>
+              <div class="card-body">
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Policy</th>
+                        <th>Lookahead Horizon</th>
+                        <th>Cost Awareness</th>
+                        <th>Avg. Cost</th>
+                        <th>Avg. Tests</th>
+                        <th>Accuracy</th>
+                        <th>Characteristics</th>
+                      </tr>
+                    </thead>
+                    <tbody id="algo-lab-tbody">
+                      <!-- Filled dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accuracy vs Budget Curve Chart -->
+            <div class="card algo-chart-card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Accuracy vs. Budget Curves</h3>
+                  <span class="card-desc">Illustrative experimental sweep (N=10 episodes/point, base seed 42, budgets $3.00 to $18.00)</span>
+                </div>
+                <button class="btn btn-sm btn-secondary" id="btn-refresh-curves">Refresh Sweep</button>
+              </div>
+              <div class="card-body">
+                <div class="chart-container" id="algo-budget-curve-chart" style="height: 260px;">
+                  <!-- Multi-series SVG Line Chart -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Algorithmic Deep Dive Descriptions -->
+            <div class="card algo-descriptions-card">
+              <div class="card-header">
+                <h3 class="card-title">Algorithmic Trade-offs</h3>
+              </div>
+              <div class="card-body">
+                <div class="algo-card-row">
+                  <div class="algo-explain-box">
+                    <h4>1. Fixed Order</h4>
+                    <p>Rigidly follows a predefined canonical sequence regardless of observed evidence. Diagnostic blind spot: wastes resources performing redundant tests after high certainty is already achieved.</p>
+                  </div>
+                  <div class="algo-explain-box">
+                    <h4>2. Cheapest First</h4>
+                    <p>Greedily selects the lowest-cost investigation available. Conserves financial budget in the short term, but frequently selects uninformative tests that fail to resolve diagnostic ambiguity.</p>
+                  </div>
+                  <div class="algo-explain-box">
+                    <h4>3. Greedy Information Gain</h4>
+                    <p>Computes 1-step Shannon Expected Information Gain per unit cost (EIG / Cost). Highly effective myopic heuristic, but susceptible to "dead-end" traps where an initial low-yield test is required to unlock high-yield contingent tests.</p>
+                  </div>
+                  <div class="algo-explain-box highlight-box">
+                    <h4>4. Contingent Optimal (Bellman)</h4>
+                    <p>Full recursive value iteration over the belief simplex within budget constraints. Finds the globally optimal decision tree where downstream actions genuinely depend on upstream observed outcomes.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 5: EVALUATION & COMPARISON ==================== -->
+        <section class="view-section" id="view-evaluation">
+          <div class="section-hero">
+            <div class="hero-left">
+              <h2>Evaluation & Policy Comparison</h2>
+              <p>Run rigorous batch evaluation across synthetic episodes. Compare resolution rates, misclassifications, and export verifiable CSV audits.</p>
+            </div>
+            <div class="hero-right">
+              <button class="btn btn-primary" id="btn-run-evaluation">
+                <span>Run Evaluation</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </button>
+              <button class="btn btn-secondary" id="btn-export-csv" disabled>
+                <span>Export CSV</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="eval-workspace">
+            <!-- Evaluation Controls Bar -->
+            <div class="card eval-controls-card">
+              <div class="card-body">
+                <div class="eval-form-inline">
+                  <div class="form-group inline-group">
+                    <label for="eval-episodes">Episodes:</label>
+                    <select id="eval-episodes" class="select-field">
+                      <option value="20" selected>20 episodes</option>
+                      <option value="50">50 episodes</option>
+                      <option value="100">100 episodes</option>
+                      <option value="200">200 episodes</option>
+                    </select>
+                  </div>
+                  <div class="form-group inline-group">
+                    <label for="eval-seed">Base Seed:</label>
+                    <input type="number" id="eval-seed" value="42" min="0" class="input-field small-input">
+                  </div>
+                  <div class="form-group inline-group">
+                    <label for="eval-budget">Budget ($):</label>
+                    <input type="number" id="eval-budget" value="10.0" step="0.5" class="input-field small-input">
+                  </div>
+                  <div class="form-group inline-group">
+                    <label for="eval-threshold">Threshold:</label>
+                    <input type="number" id="eval-threshold" value="0.90" step="0.05" class="input-field small-input">
+                  </div>
+                  <div class="eval-status-indicator" id="eval-running-indicator">
+                    <span id="eval-status-text">Ready to run</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Evaluation Summary Metric Cards -->
+            <div class="eval-metrics-grid">
+              <div class="eval-stat-card card">
+                <span class="esc-label">Overall Accuracy</span>
+                <div class="esc-val" id="esc-overall-acc">--</div>
+                <span class="esc-sub">Correct / Attempted</span>
+              </div>
+              <div class="eval-stat-card card">
+                <span class="esc-label">Resolved Accuracy</span>
+                <div class="esc-val" id="esc-resolved-acc">--</div>
+                <span class="esc-sub">Threshold reached</span>
+              </div>
+              <div class="eval-stat-card card">
+                <span class="esc-label">Unresolved Rate</span>
+                <div class="esc-val text-warning" id="esc-unresolved-rate">--</div>
+                <span class="esc-sub">Budget exhausted</span>
+              </div>
+              <div class="eval-stat-card card">
+                <span class="esc-label">Mean Investigation Cost</span>
+                <div class="esc-val" id="esc-mean-cost">--</div>
+                <span class="esc-sub">Per completed episode</span>
+              </div>
+              <div class="eval-stat-card card">
+                <span class="esc-label">Mean Tests Taken</span>
+                <div class="esc-val" id="esc-mean-tests">--</div>
+                <span class="esc-sub">Investigations per case</span>
+              </div>
+              <div class="eval-stat-card card">
+                <span class="esc-label">Avg. Final Entropy</span>
+                <div class="esc-val" id="esc-mean-entropy">--</div>
+                <span class="esc-sub">Remaining uncertainty (bits)</span>
+              </div>
+            </div>
+
+            <!-- Policy Comparison Breakdown Table -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Policy Metric Breakdown</h3>
+                <span class="card-desc">Summaries aggregated directly by evaluation.py</span>
+              </div>
+              <div class="card-body">
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Policy</th>
+                        <th>Attempted</th>
+                        <th>Completed</th>
+                        <th>Overall Acc.</th>
+                        <th>Resolved Acc.</th>
+                        <th>Resolution Rate</th>
+                        <th>Mean Cost ($)</th>
+                        <th>Mean Tests</th>
+                        <th>Final Entropy (bits)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="eval-summaries-tbody">
+                      <tr><td colspan="9" class="text-center text-muted">Click "Run Evaluation" to compute comparative results.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Episode-Level Result Drilldown Table -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Episode-Level Inspection Table</h3>
+                  <span class="card-desc">Audit each individual synthetic case</span>
+                </div>
+                <div class="filter-group">
+                  <select id="eval-episode-filter-policy" class="select-field small-select">
+                    <option value="all">All Policies</option>
+                    <option value="greedy_information_gain">Greedy Info Gain</option>
+                    <option value="contingent_optimal">Contingent Optimal</option>
+                    <option value="cheapest_first">Cheapest First</option>
+                    <option value="fixed_order">Fixed Order</option>
+                  </select>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-container scrollable-table">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Seed</th>
+                        <th>Policy</th>
+                        <th>Hidden Truth</th>
+                        <th>Predicted</th>
+                        <th>Correct?</th>
+                        <th>Resolved?</th>
+                        <th>Cost ($)</th>
+                        <th>Tests Taken</th>
+                        <th>Performed Tests</th>
+                        <th>Termination</th>
+                      </tr>
+                    </thead>
+                    <tbody id="eval-episodes-tbody">
+                      <tr><td colspan="10" class="text-center text-muted">No evaluation data loaded.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 6: AI CONCEPTS LAB ==================== -->
+        <section class="view-section" id="view-ai-lab">
+          <div class="view-content-wrapper">
+            <!-- Sub-tab Selector -->
+            <div class="sub-tab-bar">
+              <button class="sub-tab-btn active" id="tab-btn-bn" data-target="subtab-bayes-net">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"></circle><circle cx="12" cy="18" r="3"></circle><line x1="6" y1="9" x2="12" y2="15"></line><line x1="18" y1="9" x2="12" y2="15"></line></svg>
+                <span>Bayesian Network Explorer (DAG & Enumeration)</span>
+              </button>
+              <button class="sub-tab-btn" id="tab-btn-logic" data-target="subtab-logic">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                <span>Propositional Logic Explorer (AST & Entailment)</span>
+              </button>
+            </div>
+
+            <!-- SUB-TAB 1: BAYESIAN NETWORK EXPLORER -->
+            <div class="ai-lab-tab-content active" id="subtab-bayes-net">
+              <div class="card mb-4">
+                <div class="card-header">
+                  <div class="header-with-badge">
+                    <h3 class="card-title">Canonical 4-Variable Alarm Network (Russell & Norvig AIMA Ch. 14)</h3>
+                    <span class="status-badge badge-violet">Exact Enumeration Engine</span>
+                  </div>
+                  <p class="card-desc">
+                    Directed Acyclic Graph (DAG) over discrete variables representing causal domain relationships.
+                    Computes exact joint and posterior distributions without sampling error: 
+                    <code>P(X|e) = α ∑_y P(X, e, y)</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid-2-col">
+                <!-- Left: DAG Visualizer & CPT Inspector -->
+                <div class="flex-column gap-4">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">DAG Topology & Variable States</h4>
+                      <div class="text-xs text-muted">Purple = Query · Green = Evidence · Slate = Unobserved</div>
+                    </div>
+                    <div class="card-body">
+                      <div class="bn-dag-container" id="bn-dag-svg-wrapper">
+                        <!-- Dynamic SVG injected by JS -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">Conditional Probability Tables (CPT)</h4>
+                    </div>
+                    <div class="card-body" style="max-height: 280px; overflow-y: auto;">
+                      <div id="bn-cpt-container" class="text-xs">
+                        <!-- Rendered CPT tables injected by JS -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Inference Controls & Results -->
+                <div class="flex-column gap-4">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">Exact Inference Query Builder</h4>
+                    </div>
+                    <div class="card-body">
+                      <div class="form-group mb-3">
+                        <label class="form-label" for="bn-query-select">Target Query Variable <code>P(X | e)</code></label>
+                        <select class="form-select" id="bn-query-select">
+                          <option value="Burglary">Burglary (Hypothesis)</option>
+                          <option value="Earthquake">Earthquake (Hypothesis)</option>
+                          <option value="Alarm">Alarm (Sensor Intermediate)</option>
+                          <option value="JohnCalls">JohnCalls (Observation)</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group mb-3">
+                        <label class="form-label">Observed Evidence <code>e</code></label>
+                        <div class="grid-2-col gap-2">
+                          <div>
+                            <span class="text-xs text-muted">Burglary:</span>
+                            <select class="form-select text-xs bn-evidence-select" data-var="Burglary">
+                              <option value="none">Unobserved</option>
+                              <option value="true">True</option>
+                              <option value="false">False</option>
+                            </select>
+                          </div>
+                          <div>
+                            <span class="text-xs text-muted">Earthquake:</span>
+                            <select class="form-select text-xs bn-evidence-select" data-var="Earthquake">
+                              <option value="none">Unobserved</option>
+                              <option value="true">True</option>
+                              <option value="false">False</option>
+                            </select>
+                          </div>
+                          <div>
+                            <span class="text-xs text-muted">Alarm:</span>
+                            <select class="form-select text-xs bn-evidence-select" data-var="Alarm">
+                              <option value="none">Unobserved</option>
+                              <option value="true">True</option>
+                              <option value="false">False</option>
+                            </select>
+                          </div>
+                          <div>
+                            <span class="text-xs text-muted">JohnCalls:</span>
+                            <select class="form-select text-xs bn-evidence-select" data-var="JohnCalls">
+                              <option value="none">Unobserved</option>
+                              <option value="true">True</option>
+                              <option value="false">False</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button class="btn-primary w-100 mb-3" id="btn-bn-run-query">
+                        Compute Exact Posterior (Enumeration)
+                      </button>
+
+                      <div>
+                        <span class="text-xs text-muted">Canonical Demonstrations:</span>
+                        <div class="bn-preset-pills">
+                          <button class="preset-pill-btn" id="btn-bn-demo-alarm">P(Alarm)</button>
+                          <button class="preset-pill-btn" id="btn-bn-demo-john">P(JohnCalls | Alarm=T)</button>
+                          <button class="preset-pill-btn" id="btn-bn-demo-burglary">P(Burglary | JohnCalls=T)</button>
+                          <button class="preset-pill-btn" id="btn-bn-demo-explaining">Explaining Away: P(E | A=T, B=T)</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Inference Results Display -->
+                  <div class="card">
+                    <div class="card-header">
+                      <div class="header-with-badge">
+                        <h4 class="card-title">Posterior Probability Distribution</h4>
+                        <span class="status-badge badge-green" id="bn-result-query-badge">P(Burglary | e)</span>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      <div id="bn-result-distribution-bars" class="mb-3">
+                        <!-- Bars injected by JS -->
+                      </div>
+
+                      <div class="counterexample-callout valid" id="bn-result-explanation-box">
+                        Select a query and click Compute to execute exact enumeration inference.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUB-TAB 2: PROPOSITIONAL LOGIC EXPLORER -->
+            <div class="ai-lab-tab-content" id="subtab-logic">
+              <div class="card mb-4">
+                <div class="card-header">
+                  <div class="header-with-badge">
+                    <h3 class="card-title">Propositional Logic, Model Checking & Entailment</h3>
+                    <span class="status-badge badge-blue">Recursive-Descent AST Engine</span>
+                  </div>
+                  <p class="card-desc">
+                    Deterministic lexer and grammar parser with precedence: <code>~ > & > | > -> > &lt;-></code>.
+                    Exhaustive truth table generation and model-checking definition of entailment (<code>KB ⊨ α</code>).
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid-2-col">
+                <!-- Left: Formula & Truth Table -->
+                <div class="card">
+                  <div class="card-header">
+                    <h4 class="card-title">Formula Evaluation & Truth Table</h4>
+                  </div>
+                  <div class="card-body">
+                    <div class="form-group mb-2">
+                      <label class="form-label" for="logic-input-expr">Logical Formula</label>
+                      <div class="logic-symbol-buttons">
+                        <button type="button" class="logic-sym-btn" data-insert="~">~ (NOT)</button>
+                        <button type="button" class="logic-sym-btn" data-insert=" & ">& (AND)</button>
+                        <button type="button" class="logic-sym-btn" data-insert=" | ">| (OR)</button>
+                        <button type="button" class="logic-sym-btn" data-insert=" -> ">-> (IMP)</button>
+                        <button type="button" class="logic-sym-btn" data-insert=" <-> ">&lt;-> (IFF)</button>
+                      </div>
+                      <input type="text" class="form-control" id="logic-input-expr" value="~(P & Q) <-> (~P | ~Q)">
+                    </div>
+
+                    <div class="logic-preset-pills mb-3">
+                      <button class="preset-pill-btn" id="btn-logic-demo-taut">Tautology (P | ~P)</button>
+                      <button class="preset-pill-btn" id="btn-logic-demo-equiv">Material Implication</button>
+                      <button class="preset-pill-btn" id="btn-logic-demo-demorgan">De Morgan's Law</button>
+                      <button class="preset-pill-btn" id="btn-logic-demo-contra">Contradiction (P & ~P)</button>
+                    </div>
+
+                    <button class="btn-primary w-100 mb-3" id="btn-logic-generate-tt">
+                      Generate Truth Table & Check Properties
+                    </button>
+
+                    <!-- Formula metadata -->
+                    <div class="glass-info-card mb-3 text-xs" id="logic-formula-meta" style="display: none;">
+                      <div><strong>Parsed:</strong> <code id="logic-parsed-str"></code></div>
+                      <div><strong>AST Prefix:</strong> <code id="logic-prefix-str"></code></div>
+                      <div class="mt-1" id="logic-badges-row"></div>
+                    </div>
+
+                    <!-- Truth Table Display -->
+                    <div style="max-height: 280px; overflow-y: auto;" class="table-container">
+                      <table class="data-table" id="logic-tt-table">
+                        <thead id="logic-tt-thead"></thead>
+                        <tbody id="logic-tt-tbody">
+                          <tr><td class="text-muted text-center">Click Generate Truth Table to evaluate.</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Semantic Entailment Checker -->
+                <div class="card">
+                  <div class="card-header">
+                    <h4 class="card-title">Semantic Entailment Checker (KB ⊨ α)</h4>
+                  </div>
+                  <div class="card-body">
+                    <div class="form-group mb-2">
+                      <label class="form-label" for="logic-input-premises">Premises <code>KB = {P1, P2, ...}</code> (comma-separated)</label>
+                      <input type="text" class="form-control" id="logic-input-premises" value="P -> Q, P">
+                    </div>
+
+                    <div class="form-group mb-3">
+                      <label class="form-label" for="logic-input-conclusion">Conclusion <code>α</code></label>
+                      <input type="text" class="form-control" id="logic-input-conclusion" value="Q">
+                    </div>
+
+                    <div class="logic-preset-pills mb-3">
+                      <button class="preset-pill-btn" id="btn-logic-demo-mp">Modus Ponens (Valid)</button>
+                      <button class="preset-pill-btn" id="btn-logic-demo-ac">Affirming Consequent (Invalid)</button>
+                      <button class="preset-pill-btn" id="btn-logic-demo-mt">Modus Tollens (Valid)</button>
+                      <button class="preset-pill-btn" id="btn-logic-demo-da">Denying Antecedent (Invalid)</button>
+                    </div>
+
+                    <button class="btn-primary w-100 mb-3" id="btn-logic-check-entailment">
+                      Verify Semantic Entailment
+                    </button>
+
+                    <!-- Entailment Verdict Callout -->
+                    <div id="logic-entailment-callout" class="counterexample-callout valid mb-3">
+                      Ready to check entailment. Enter premises and conclusion or select a canonical demonstration.
+                    </div>
+
+                    <!-- Entailment Table Display -->
+                    <div style="max-height: 260px; overflow-y: auto;" class="table-container">
+                      <table class="data-table" id="logic-entailment-table">
+                        <thead id="logic-entailment-thead"></thead>
+                        <tbody id="logic-entailment-tbody">
+                          <tr><td class="text-muted text-center">No entailment check performed yet.</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 7: MODEL SPEC ==================== -->
+        <section class="view-section" id="view-settings">
+          <div class="section-hero">
+            <h2>Model Specification & Likelihood Matrices</h2>
+            <p>Inspect the synthetic hypothesis space, base rate priors, test costs, and observation likelihoods P(outcome | hypothesis) from config.py.</p>
+          </div>
+
+          <div class="settings-grid">
+            <!-- Hypotheses Table -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Candidate Hypotheses & Prior Distribution</h3>
+              </div>
+              <div class="card-body">
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Label</th>
+                        <th>Prior P(H)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="spec-hypotheses-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Investigations Table -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Available Investigations & Observation Likelihoods</h3>
+              </div>
+              <div class="card-body">
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Test ID</th>
+                        <th>Label</th>
+                        <th>Cost</th>
+                        <th>Possible Outcomes</th>
+                        <th>Likelihood Matrix Summary</th>
+                      </tr>
+                    </thead>
+                    <tbody id="spec-investigations-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- FOOTER -->
+      <footer class="app-footer">
+        <div class="footer-left">
+          <span>TestWise · Bayesian Inference · Sequential Investigations · Optimal Planning</span>
+        </div>
+        <div class="footer-right">
+          <span class="footer-status">● Ready</span>
+          <span class="footer-timestamp" id="footer-timestamp">Active Session</span>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
