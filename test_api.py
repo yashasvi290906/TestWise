@@ -462,6 +462,262 @@ class TestWiseApiIntegrationTests(unittest.TestCase):
             self.assertEqual(s_code, 200)
             self.assertEqual(st_code, 200)
 
+    def test_22_independent_sessions_progress_without_registry_lock_serialization(self) -> None:
+        """Prove that independent sessions progress in parallel and are not serialized by registry lock.
+
+        Uses deterministic synchronization primitives (threading.Event) to establish
+        that Session B starts and completes an episode step while Session A is held paused
+        inside its own session lock.
+        """
+        import threading
+        import simulation
+
+        res_a = self.client.post("/api/episode/start", json={"seed": 101, "budget": 10.0})
+        res_b = self.client.post("/api/episode/start", json={"seed": 202, "budget": 10.0})
+        sid_a = res_a.json()["session_id"]
+        sid_b = res_b.json()["session_id"]
+
+        session_a_in_lock = threading.Event()
+        session_a_can_exit = threading.Event()
+        session_b_completed = threading.Event()
+
+        orig_step = simulation.step_episode
+
+        def instrumented_step(ep, m, pol, sett):
+            # Only intercept Session A's step
+            if getattr(ep, "seed", None) == 101:
+                session_a_in_lock.set()
+                session_a_can_exit.wait(timeout=5.0)
+            return orig_step(ep, m, pol, sett)
+
+        simulation.step_episode = instrumented_step
+        try:
+            thread_a_result = []
+
+            def worker_a():
+                res = self.client.post("/api/episode/step", json={"session_id": sid_a})
+                thread_a_result.append(res.status_code)
+
+            t_a = threading.Thread(target=worker_a)
+            t_a.start()
+
+            # Wait until Session A has acquired its lock and paused inside step
+            self.assertTrue(session_a_in_lock.wait(timeout=3.0), "Session A failed to enter lock")
+
+            # At this exact moment: Session A holds session_a.lock and is paused.
+            # If adapter held registry_lock across the step, calling step on Session B
+            # would block on registry_lock.
+            # Now invoke step on Session B:
+            res_b_step = self.client.post("/api/episode/step", json={"session_id": sid_b})
+            self.assertEqual(res_b_step.status_code, 200)
+            self.assertEqual(res_b_step.json()["steps_taken"], 1)
+            session_b_completed.set()
+
+            # Unpause Session A
+            session_a_can_exit.set()
+            t_a.join(timeout=3.0)
+
+            self.assertEqual(thread_a_result, [200])
+            self.assertTrue(session_b_completed.is_set())
+        finally:
+            simulation.step_episode = orig_step
+            session_a_can_exit.set()
+
+    def test_23_racing_step_and_reset_deterministic_behavior(self) -> None:
+        """Prove that racing reset and step operations on the same session have deterministic, valid outcomes."""
+        import concurrent.futures
+
+        res = self.client.post("/api/episode/start", json={"seed": 42, "budget": 10.0})
+        sid = res.json()["session_id"]
+
+        def do_step():
+            return self.client.post("/api/episode/step", json={"session_id": sid})
+
+        def do_reset():
+            return self.client.post("/api/episode/reset", json={"session_id": sid})
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            f_step = executor.submit(do_step)
+            f_reset = executor.submit(do_reset)
+            r_step = f_step.result()
+            r_reset = f_reset.result()
+
+        self.assertEqual(r_step.status_code, 200)
+        self.assertEqual(r_reset.status_code, 200)
+
+        # State check: Regardless of whether step or reset won the race,
+        # the state must be mathematically consistent (never corrupt or torn).
+        final_state = self.client.get(f"/api/episode/state?session_id={sid}").json()
+        self.assertIn(final_state["steps_taken"], (0, 1))
+        self.assertEqual(len(final_state["history"]), final_state["steps_taken"])
+        if final_state["steps_taken"] == 0:
+            self.assertEqual(final_state["remaining_budget"], 10.0)
+        else:
+            self.assertLess(final_state["remaining_budget"], 10.0)
+
+    def test_24_eviction_and_in_flight_operation_safety(self) -> None:
+        """Prove that in-flight operations safely complete if a session is evicted after lookup.
+
+        Crucially verifies that the response explicitly signals eviction (is_active: False,
+        is_evicted: True, X-Session-Evicted: true) so no successful in-flight response falsely
+        implies the session remains available in the registry.
+        """
+        import threading
+        from app import adapter
+        import simulation
+
+        res = self.client.post("/api/episode/start", json={"seed": 55, "budget": 10.0})
+        self.assertEqual(res.status_code, 200)
+        start_payload = res.json()
+        sid = start_payload["session_id"]
+        self.assertTrue(start_payload["is_active"])
+        self.assertFalse(start_payload["is_evicted"])
+
+        # Safely retain session reference before eviction
+        session = adapter._lookup_session(sid)
+        self.assertFalse(session.is_evicted)
+
+        # Evict the session under registry lock while reference is held
+        evicted = adapter.evict_session(sid)
+        self.assertTrue(evicted)
+        self.assertTrue(session.is_evicted)
+
+        # Subsequent lookup must fail with KeyError (HTTP 404)
+        with self.assertRaises(KeyError):
+            adapter._lookup_session(sid)
+        not_found_res = self.client.get(f"/api/episode/state?session_id={sid}")
+        self.assertEqual(not_found_res.status_code, 404)
+
+        # In-flight operation on retained reference completes cleanly under session.lock
+        with session.lock:
+            simulation.step_episode(session.episode, adapter.model, session.policy, session.settings)
+            state_dict = session.to_dict()
+
+        self.assertEqual(state_dict["steps_taken"], 1)
+        self.assertLess(state_dict["remaining_budget"], 10.0)
+        # Verify explicit notification that session was evicted during operation
+        self.assertFalse(state_dict["is_active"])
+        self.assertTrue(state_dict["is_evicted"])
+
+        # Also verify end-to-end HTTP behavior: in-flight HTTP step during eviction
+        res2 = self.client.post("/api/episode/start", json={"seed": 88, "budget": 10.0})
+        sid2 = res2.json()["session_id"]
+
+        step_in_progress = threading.Event()
+        can_finish_step = threading.Event()
+        http_step_result = []
+
+        orig_step = simulation.step_episode
+
+        def intercept_step(ep, m, pol, sett):
+            if getattr(ep, "seed", None) == 88:
+                step_in_progress.set()
+                can_finish_step.wait(timeout=5.0)
+            return orig_step(ep, m, pol, sett)
+
+        simulation.step_episode = intercept_step
+        try:
+            def client_worker():
+                r = self.client.post("/api/episode/step", json={"session_id": sid2})
+                http_step_result.append(r)
+
+            t = threading.Thread(target=client_worker)
+            t.start()
+
+            # Wait for step to begin
+            self.assertTrue(step_in_progress.wait(timeout=3.0))
+
+            # Evict session while step is actively executing
+            adapter.evict_session(sid2)
+
+            # Let step finish
+            can_finish_step.set()
+            t.join(timeout=3.0)
+
+            # In-flight HTTP request finished with 200, but explicitly declares eviction
+            self.assertEqual(len(http_step_result), 1)
+            step_r = http_step_result[0]
+            self.assertEqual(step_r.status_code, 200)
+            self.assertFalse(step_r.json()["is_active"])
+            self.assertTrue(step_r.json()["is_evicted"])
+            self.assertEqual(step_r.headers.get("x-session-evicted"), "true")
+
+            # Subsequent requests for this session immediately receive 404
+            next_step_r = self.client.post("/api/episode/step", json={"session_id": sid2})
+            self.assertEqual(next_step_r.status_code, 404)
+        finally:
+            simulation.step_episode = orig_step
+            can_finish_step.set()
+
+    def test_25_snapshot_consistency_during_active_state_transitions(self) -> None:
+        """Prove that snapshot reads are always consistent with completed transitions and never see torn state."""
+        import threading
+        from app import adapter
+
+        res = self.client.post("/api/episode/start", json={"seed": 77, "budget": 10.0})
+        sid = res.json()["session_id"]
+
+        stop_flag = threading.Event()
+        read_errors = []
+
+        def reader():
+            while not stop_flag.is_set():
+                snap = adapter.get_episode_state(sid)
+                if len(snap["history"]) != snap["steps_taken"]:
+                    read_errors.append("History length does not match steps_taken")
+                if not (abs((snap["cumulative_cost"] + snap["remaining_budget"]) - snap["initial_budget"]) < 1e-6):
+                    read_errors.append("Cost and budget mismatch")
+                if snap["is_terminal"] and snap["hidden_truth"] is None:
+                    read_errors.append("Terminal episode missing hidden truth")
+                if not snap["is_terminal"] and snap["hidden_truth"] is not None:
+                    read_errors.append("Active episode leaked hidden truth")
+
+        t_reader = threading.Thread(target=reader)
+        t_reader.start()
+
+        for _ in range(6):
+            self.client.post("/api/episode/step", json={"session_id": sid})
+
+        stop_flag.set()
+        t_reader.join(timeout=3.0)
+
+        self.assertEqual(read_errors, [])
+
+    def test_26_fifo_registry_capacity_eviction(self) -> None:
+        """Verify FIFO eviction when registry capacity exceeds max_sessions."""
+        from app import adapter
+        with adapter.registry_lock:
+            saved_sessions = dict(adapter.active_sessions)
+            adapter.active_sessions.clear()
+            orig_max = adapter.max_sessions
+            adapter.max_sessions = 5
+        try:
+            sids = []
+            for i in range(5):
+                r = self.client.post("/api/episode/start", json={"seed": i, "budget": 10.0})
+                sids.append(r.json()["session_id"])
+
+            for sid in sids:
+                res = self.client.get(f"/api/episode/state?session_id={sid}")
+                self.assertEqual(res.status_code, 200)
+
+            # Start 6th episode -> oldest (sids[0]) must be evicted
+            r6 = self.client.post("/api/episode/start", json={"seed": 99, "budget": 10.0})
+            sid6 = r6.json()["session_id"]
+
+            res_old = self.client.get(f"/api/episode/state?session_id={sids[0]}")
+            self.assertEqual(res_old.status_code, 404)
+
+            # Subsequent 4 and 6th remain valid
+            for sid in sids[1:] + [sid6]:
+                res = self.client.get(f"/api/episode/state?session_id={sid}")
+                self.assertEqual(res.status_code, 200)
+        finally:
+            with adapter.registry_lock:
+                adapter.active_sessions.clear()
+                adapter.active_sessions.update(saved_sessions)
+                adapter.max_sessions = orig_max
+
 
 if __name__ == "__main__":
     unittest.main()

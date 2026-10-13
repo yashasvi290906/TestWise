@@ -163,7 +163,7 @@ D:\TestWise\
 ├── test_testwise.py      # Core engine unit tests (103 tests)
 ├── test_simulation.py    # Simulation lifecycle tests (30 tests)
 ├── test_evaluation.py    # Evaluation metric and CSV tests (22 tests)
-├── test_api.py           # REST API integration & concurrency tests (21 tests)
+├── test_api.py           # REST API integration & concurrency tests (26 tests)
 ├── test_bayes_net.py     # Bayesian Network inference tests (16 tests)
 └── test_logic.py         # Propositional logic parsing & entailment tests (10 tests)
 ```

@@ -83,6 +83,7 @@ class EpisodeSession:
         self.initial_budget = float(episode.initial_budget)
         self.seed = int(episode.seed)
         self.lock = threading.Lock()
+        self.is_evicted: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert current episode state to frontend-safe dictionary.
@@ -174,6 +175,10 @@ class EpisodeSession:
         else:
             payload["hidden_truth"] = None
 
+        # Explicitly declare session availability so in-flight evicted operations do not falsely imply availability
+        payload["is_active"] = not self.is_evicted
+        payload["is_evicted"] = self.is_evicted
+
         return payload
 
 
@@ -256,21 +261,47 @@ class TestWiseAdapter:
         session = EpisodeSession(session_id, ep, policy, a_settings, self.model)
         
         with self.registry_lock:
-            # Evict oldest session if capacity reached
+            # Evict oldest session if capacity reached (FIFO order)
             if len(self.active_sessions) >= self.max_sessions:
-                oldest_id = next(iter(self.active_sessions))
+                oldest_id, oldest_sess = next(iter(self.active_sessions.items()))
+                oldest_sess.is_evicted = True
                 del self.active_sessions[oldest_id]
             self.active_sessions[session_id] = session
 
         with session.lock:
             return session.to_dict()
 
-    def step_episode(self, session_id: str) -> Dict[str, Any]:
-        """Execute one autonomous step using the episode's configured policy."""
+    def _lookup_session(self, session_id: str) -> EpisodeSession:
+        """Safely retrieve and retain a session reference under registry lock.
+
+        Releases the registry lock immediately so subsequent episode operations
+        on other sessions are never serialized by the registry.
+        Raises KeyError if the session is unknown or has been evicted.
+        """
         with self.registry_lock:
             session = self.active_sessions.get(session_id)
-        if not session:
+        if session is None:
             raise KeyError(f"Episode session {session_id!r} not found")
+        return session
+
+    def evict_session(self, session_id: str) -> bool:
+        """Safely evict a session from the registry under registry lock.
+
+        Sets `session.is_evicted = True` and removes the session from `active_sessions`.
+        Any in-flight operation currently holding a reference to `session` will
+        safely complete under `session.lock` without crashing or corrupting memory.
+        Subsequent lookups for `session_id` will return KeyError.
+        """
+        with self.registry_lock:
+            session = self.active_sessions.pop(session_id, None)
+            if session is not None:
+                session.is_evicted = True
+                return True
+            return False
+
+    def step_episode(self, session_id: str) -> Dict[str, Any]:
+        """Execute one autonomous step using the episode's configured policy."""
+        session = self._lookup_session(session_id)
 
         with session.lock:
             if session.episode.is_terminal:
@@ -286,10 +317,7 @@ class TestWiseAdapter:
 
     def investigate_test(self, session_id: str, test_id: str) -> Dict[str, Any]:
         """Manually execute a specific investigation chosen by the user in the workbench."""
-        with self.registry_lock:
-            session = self.active_sessions.get(session_id)
-        if not session:
-            raise KeyError(f"Episode session {session_id!r} not found")
+        session = self._lookup_session(session_id)
 
         m = self.model
         if test_id not in {i.id for i in m.investigations}:
@@ -356,10 +384,7 @@ class TestWiseAdapter:
 
     def reset_episode(self, session_id: str) -> Dict[str, Any]:
         """Reset the episode to its initial state in-place using identical parameters."""
-        with self.registry_lock:
-            session = self.active_sessions.get(session_id)
-        if not session:
-            raise KeyError(f"Episode session {session_id!r} not found")
+        session = self._lookup_session(session_id)
 
         with session.lock:
             session.episode = simulation.create_episode(
@@ -371,10 +396,7 @@ class TestWiseAdapter:
 
     def get_episode_state(self, session_id: str) -> Dict[str, Any]:
         """Retrieve state for an existing episode."""
-        with self.registry_lock:
-            session = self.active_sessions.get(session_id)
-        if not session:
-            raise KeyError(f"Episode session {session_id!r} not found")
+        session = self._lookup_session(session_id)
         with session.lock:
             return session.to_dict()
 
@@ -479,7 +501,11 @@ class TestWiseAdapter:
 
         report = evaluation.evaluate_policies(eval_cfg, policies=p_list)
         report_id = str(uuid.uuid4())
-        self.cached_evaluations[report_id] = report
+        with self.registry_lock:
+            if len(self.cached_evaluations) >= 50:
+                oldest_eval_id = next(iter(self.cached_evaluations))
+                del self.cached_evaluations[oldest_eval_id]
+            self.cached_evaluations[report_id] = report
 
         # Serialize summaries and individual episode results
         serialized_summaries = {}
@@ -537,7 +563,8 @@ class TestWiseAdapter:
         """Export cached evaluation report as raw CSV text."""
         import os
         import tempfile
-        report = self.cached_evaluations.get(report_id)
+        with self.registry_lock:
+            report = self.cached_evaluations.get(report_id)
         if not report:
             raise KeyError(f"Evaluation report {report_id!r} not found")
 

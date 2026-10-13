@@ -132,10 +132,13 @@ def start_episode(req: StartEpisodeRequest) -> Dict[str, Any]:
 
 
 @app.post("/api/episode/step")
-def step_episode(req: StepEpisodeRequest) -> Dict[str, Any]:
+def step_episode(req: StepEpisodeRequest, response: Response) -> Dict[str, Any]:
     """Execute one autonomous decision step in the episode under its policy."""
     try:
-        return adapter.step_episode(req.session_id)
+        data = adapter.step_episode(req.session_id)
+        if data.get("is_evicted"):
+            response.headers["X-Session-Evicted"] = "true"
+        return data
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -143,10 +146,13 @@ def step_episode(req: StepEpisodeRequest) -> Dict[str, Any]:
 
 
 @app.post("/api/episode/investigate")
-def investigate_test(req: InvestigateRequest) -> Dict[str, Any]:
+def investigate_test(req: InvestigateRequest, response: Response) -> Dict[str, Any]:
     """Execute a specific investigation selected manually by the user in the workbench."""
     try:
-        return adapter.investigate_test(req.session_id, req.test_id)
+        data = adapter.investigate_test(req.session_id, req.test_id)
+        if data.get("is_evicted"):
+            response.headers["X-Session-Evicted"] = "true"
+        return data
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -154,10 +160,13 @@ def investigate_test(req: InvestigateRequest) -> Dict[str, Any]:
 
 
 @app.post("/api/episode/reset")
-def reset_episode(req: StepEpisodeRequest) -> Dict[str, Any]:
+def reset_episode(req: StepEpisodeRequest, response: Response) -> Dict[str, Any]:
     """Reset the current episode back to prior beliefs with full budget restored."""
     try:
-        return adapter.reset_episode(req.session_id)
+        data = adapter.reset_episode(req.session_id)
+        if data.get("is_evicted"):
+            response.headers["X-Session-Evicted"] = "true"
+        return data
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -165,10 +174,13 @@ def reset_episode(req: StepEpisodeRequest) -> Dict[str, Any]:
 
 
 @app.get("/api/episode/state")
-def get_episode_state(session_id: str = Query(...)) -> Dict[str, Any]:
+def get_episode_state(session_id: str = Query(...), response: Response = None) -> Dict[str, Any]:
     """Retrieve the current state of an active or completed episode."""
     try:
-        return adapter.get_episode_state(session_id)
+        data = adapter.get_episode_state(session_id)
+        if data.get("is_evicted") and response is not None:
+            response.headers["X-Session-Evicted"] = "true"
+        return data
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

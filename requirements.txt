@@ -5,3 +5,4 @@ pydantic>=2.0.0,<3.0.0
 
 # Testing Dependencies (required for Starlette TestClient in test_api.py)
 httpx>=0.24.0,<1.0.0
+httpx2>=2.0.0,<3.0.0
