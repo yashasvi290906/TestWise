@@ -378,7 +378,92 @@ class TestWiseApiIntegrationTests(unittest.TestCase):
         self.assertIn("modus_ponens", demos)
         self.assertIn("affirming_the_consequent", demos)
 
+    def test_18_episode_reset_preserves_session_id_and_restores_state(self) -> None:
+        """Verify complete start -> step -> reset -> step lifecycle preserves session ID and state."""
+        # 1. Start episode
+        start_res = self.client.post(
+            "/api/episode/start",
+            json={"seed": 42, "budget": 10.0, "policy": "greedy_information_gain"},
+        )
+        self.assertEqual(start_res.status_code, 200)
+        orig_session_id = start_res.json()["session_id"]
+
+        # 2. Step once
+        step1_res = self.client.post("/api/episode/step", json={"session_id": orig_session_id})
+        self.assertEqual(step1_res.status_code, 200)
+        s1 = step1_res.json()
+        self.assertEqual(s1["steps_taken"], 1)
+        self.assertLess(s1["remaining_budget"], 10.0)
+        self.assertEqual(len(s1["history"]), 1)
+
+        # 3. Reset episode
+        reset_res = self.client.post("/api/episode/reset", json={"session_id": orig_session_id})
+        self.assertEqual(reset_res.status_code, 200)
+        r_state = reset_res.json()
+
+        # Contract verification: Session ID preserved, budget restored, history cleared
+        self.assertEqual(r_state["session_id"], orig_session_id)
+        self.assertEqual(r_state["remaining_budget"], 10.0)
+        self.assertEqual(r_state["cumulative_cost"], 0.0)
+        self.assertEqual(r_state["steps_taken"], 0)
+        self.assertEqual(len(r_state["history"]), 0)
+        self.assertFalse(r_state["is_terminal"])
+        self.assertIsNone(r_state["hidden_truth"])
+
+        # 4. Step after reset operates on the freshly reset episode
+        step2_res = self.client.post("/api/episode/step", json={"session_id": orig_session_id})
+        self.assertEqual(step2_res.status_code, 200)
+        s2 = step2_res.json()
+        self.assertEqual(s2["steps_taken"], 1)
+        self.assertLess(s2["remaining_budget"], 10.0)
+        self.assertEqual(len(s2["history"]), 1)
+
+    def test_19_reset_unknown_session_returns_404(self) -> None:
+        """Verify resetting an unknown or expired session returns HTTP 404."""
+        res = self.client.post("/api/episode/reset", json={"session_id": "nonexistent-sess-id"})
+        self.assertEqual(res.status_code, 404)
+        self.assertIn("not found", res.json()["detail"].lower())
+
+    def test_20_cors_configuration_allows_explicit_origins(self) -> None:
+        """Verify CORS headers respond to explicit allowed origins without wildcard credentials."""
+        res = self.client.get(
+            "/api/config",
+            headers={"Origin": "http://localhost:8000"},
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.headers.get("access-control-allow-origin"), "http://localhost:8000")
+        self.assertEqual(res.headers.get("access-control-allow-credentials"), "true")
+
+        # Disallowed origin should not receive Access-Control-Allow-Origin
+        res_disallowed = self.client.get(
+            "/api/config",
+            headers={"Origin": "http://untrusted-site.org"},
+        )
+        self.assertNotEqual(res_disallowed.headers.get("access-control-allow-origin"), "http://untrusted-site.org")
+
+    def test_21_concurrent_registry_access_safety(self) -> None:
+        """Verify concurrent episode creations and lookups do not corrupt session registry."""
+        import concurrent.futures
+
+        def start_and_step(seed_val: int):
+            start = self.client.post(
+                "/api/episode/start",
+                json={"seed": seed_val, "budget": 10.0, "policy": "cheapest_first"},
+            )
+            sid = start.json()["session_id"]
+            step = self.client.post("/api/episode/step", json={"session_id": sid})
+            return start.status_code, step.status_code
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+            futures = [executor.submit(start_and_step, i + 100) for i in range(12)]
+            results = [f.result() for f in futures]
+
+        for s_code, st_code in results:
+            self.assertEqual(s_code, 200)
+            self.assertEqual(st_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

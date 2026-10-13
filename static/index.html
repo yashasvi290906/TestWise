@@ -132,7 +132,7 @@
                 </div>
                 <div class="kpi-body">
                   <span class="kpi-label">Total Budget</span>
-                  <div class="kpi-number" id="kpi-total-budget">$10.00</div>
+                  <div class="kpi-number" id="kpi-total-budget">10.00 units</div>
                   <span class="kpi-subtext" id="kpi-initial-budget-sub">Initial allocation</span>
                 </div>
               </div>
@@ -143,7 +143,7 @@
                 </div>
                 <div class="kpi-body">
                   <span class="kpi-label">Available Budget</span>
-                  <div class="kpi-number" id="kpi-available-budget">$10.00</div>
+                  <div class="kpi-number" id="kpi-available-budget">10.00 units</div>
                   <span class="kpi-subtext" id="kpi-remaining-budget-sub">100% remaining</span>
                 </div>
               </div>
@@ -227,7 +227,7 @@
                       <input type="number" id="cfg-seed" value="42" min="0" class="input-field">
                     </div>
                     <div class="form-group">
-                      <label for="cfg-budget">Initial Budget ($)</label>
+                      <label for="cfg-budget">Initial Budget (Units)</label>
                       <input type="number" id="cfg-budget" value="10.0" step="0.5" min="1.0" class="input-field">
                     </div>
                   </div>
@@ -261,12 +261,12 @@
                     <span class="qs-label">Investigations</span>
                   </div>
                   <div class="quick-stat-box">
-                    <span class="qs-num" id="qs-min-cost">$1.00</span>
-                    <span class="qs-label">Min Cost</span>
+                    <span class="qs-num" id="qs-min-cost">1.00</span>
+                    <span class="qs-label">Min Cost (units)</span>
                   </div>
                   <div class="quick-stat-box">
-                    <span class="qs-num" id="qs-max-cost">$5.00</span>
-                    <span class="qs-label">Max Cost</span>
+                    <span class="qs-num" id="qs-max-cost">5.00</span>
+                    <span class="qs-label">Max Cost (units)</span>
                   </div>
                 </div>
               </div>
@@ -294,9 +294,9 @@
                       <thead>
                         <tr>
                           <th>Test</th>
-                          <th>Cost</th>
+                          <th>Cost (units)</th>
                           <th>Info Gain</th>
-                          <th>Bits/$</th>
+                          <th>Bits/Cost Unit</th>
                           <th>Action</th>
                         </tr>
                       </thead>
@@ -378,9 +378,9 @@
                     <thead>
                       <tr>
                         <th>Investigation</th>
-                        <th>Cost</th>
+                        <th>Cost (units)</th>
                         <th>Exp. Info Gain (bits)</th>
-                        <th>Efficiency (bits/$)</th>
+                        <th>Efficiency (bits/unit)</th>
                         <th>Likely Outcomes</th>
                         <th>Action</th>
                       </tr>
@@ -431,7 +431,7 @@
                     <div class="rc-metrics-grid">
                       <div class="rc-metric">
                         <span class="rc-metric-lbl">Remaining Budget</span>
-                        <span class="rc-metric-val" id="rc-rem-budget">$10.00</span>
+                        <span class="rc-metric-val" id="rc-rem-budget">10.00 units</span>
                       </div>
                       <div class="rc-metric">
                         <span class="rc-metric-lbl">Current Entropy</span>
@@ -516,7 +516,7 @@
                   <!-- Interactive SVG Hierarchical Tree rendered here -->
                 </div>
                 <div style="font-size: 11px; color: var(--text-muted); padding: 6px 12px; text-align: right; border-top: 1px solid var(--border-light);">
-                  Visualized depth ≤ 3. All subtrees remain fully computed in memory and inspectable in the Node Inspector.
+                  Contingent Decision Tree: Click any node to inspect exact beliefs, action values, and outcomes. Use node cards or branch links in the inspector to explore deeper subtrees.
                 </div>
               </div>
             </div>
@@ -578,7 +578,7 @@
               <div class="card-header">
                 <div>
                   <h3 class="card-title">Accuracy vs. Budget Curves</h3>
-                  <span class="card-desc">Illustrative experimental sweep (N=10 episodes/point, base seed 42, budgets $3.00 to $18.00)</span>
+                  <span class="card-desc">Illustrative experimental sweep (N=10 episodes/point, base seed 42, budgets 3.0 to 18.0 cost units)</span>
                 </div>
                 <button class="btn btn-sm btn-secondary" id="btn-refresh-curves">Refresh Sweep</button>
               </div>
@@ -656,7 +656,7 @@
                     <input type="number" id="eval-seed" value="42" min="0" class="input-field small-input">
                   </div>
                   <div class="form-group inline-group">
-                    <label for="eval-budget">Budget ($):</label>
+                    <label for="eval-budget">Budget (Units):</label>
                     <input type="number" id="eval-budget" value="10.0" step="0.5" class="input-field small-input">
                   </div>
                   <div class="form-group inline-group">
@@ -721,7 +721,7 @@
                         <th>Overall Acc.</th>
                         <th>Resolved Acc.</th>
                         <th>Resolution Rate</th>
-                        <th>Mean Cost ($)</th>
+                        <th>Mean Cost (Units)</th>
                         <th>Mean Tests</th>
                         <th>Final Entropy (bits)</th>
                       </tr>
@@ -762,7 +762,7 @@
                         <th>Predicted</th>
                         <th>Correct?</th>
                         <th>Resolved?</th>
-                        <th>Cost ($)</th>
+                        <th>Cost (Units)</th>
                         <th>Tests Taken</th>
                         <th>Performed Tests</th>
                         <th>Termination</th>

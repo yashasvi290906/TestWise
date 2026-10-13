@@ -186,6 +186,7 @@ class TestWiseAdapter:
         self.active_sessions: Dict[str, EpisodeSession] = {}
         self.cached_evaluations: Dict[str, evaluation.EvaluationReport] = {}
         self.max_sessions: int = 100
+        self.registry_lock = threading.Lock()
 
     def get_config_metadata(self) -> Dict[str, Any]:
         """Return static model specifications, hypotheses, investigations, and parameter bounds."""
@@ -254,18 +255,20 @@ class TestWiseAdapter:
         session_id = str(uuid.uuid4())
         session = EpisodeSession(session_id, ep, policy, a_settings, self.model)
         
-        # Evict oldest session if capacity reached
-        if len(self.active_sessions) >= self.max_sessions:
-            oldest_id = next(iter(self.active_sessions))
-            del self.active_sessions[oldest_id]
+        with self.registry_lock:
+            # Evict oldest session if capacity reached
+            if len(self.active_sessions) >= self.max_sessions:
+                oldest_id = next(iter(self.active_sessions))
+                del self.active_sessions[oldest_id]
+            self.active_sessions[session_id] = session
 
-        self.active_sessions[session_id] = session
-
-        return session.to_dict()
+        with session.lock:
+            return session.to_dict()
 
     def step_episode(self, session_id: str) -> Dict[str, Any]:
         """Execute one autonomous step using the episode's configured policy."""
-        session = self.active_sessions.get(session_id)
+        with self.registry_lock:
+            session = self.active_sessions.get(session_id)
         if not session:
             raise KeyError(f"Episode session {session_id!r} not found")
 
@@ -283,13 +286,10 @@ class TestWiseAdapter:
 
     def investigate_test(self, session_id: str, test_id: str) -> Dict[str, Any]:
         """Manually execute a specific investigation chosen by the user in the workbench."""
-        session = self.active_sessions.get(session_id)
+        with self.registry_lock:
+            session = self.active_sessions.get(session_id)
         if not session:
             raise KeyError(f"Episode session {session_id!r} not found")
-
-        ep = session.episode
-        if ep.is_terminal:
-            raise ValueError("Cannot investigate: episode is already terminal")
 
         m = self.model
         if test_id not in {i.id for i in m.investigations}:
@@ -321,7 +321,7 @@ class TestWiseAdapter:
                 policy="manual_override",
                 explanation=agent.Explanation(
                     policy="manual_override",
-                    summary=f"Manually conducted test {inv.label} (cost ${inv.cost:.2f})",
+                    summary=f"Manually conducted test {inv.label} (cost {inv.cost:g} units)",
                     entropy_bits=model.entropy(ep.state.beliefs),
                     max_posterior=max(ep.state.beliefs.probabilities.values()),
                     remaining_budget=ep.state.remaining_budget,
@@ -355,27 +355,28 @@ class TestWiseAdapter:
             return session.to_dict()
 
     def reset_episode(self, session_id: str) -> Dict[str, Any]:
-        """Reset the episode to its initial state using identical parameters."""
-        session = self.active_sessions.get(session_id)
+        """Reset the episode to its initial state in-place using identical parameters."""
+        with self.registry_lock:
+            session = self.active_sessions.get(session_id)
         if not session:
             raise KeyError(f"Episode session {session_id!r} not found")
 
         with session.lock:
-            return self.start_episode(
+            session.episode = simulation.create_episode(
+                self.model,
                 seed=session.seed,
                 budget=session.initial_budget,
-                policy=session.policy,
-                confidence_threshold=session.settings.planner.confidence_threshold,
-                cost_penalty_lambda=session.settings.planner.cost_penalty_lambda,
-                max_state_expansions=session.settings.planner.max_state_expansions,
             )
+            return session.to_dict()
 
     def get_episode_state(self, session_id: str) -> Dict[str, Any]:
         """Retrieve state for an existing episode."""
-        session = self.active_sessions.get(session_id)
+        with self.registry_lock:
+            session = self.active_sessions.get(session_id)
         if not session:
             raise KeyError(f"Episode session {session_id!r} not found")
-        return session.to_dict()
+        with session.lock:
+            return session.to_dict()
 
     def solve_contingent_plan(
         self,

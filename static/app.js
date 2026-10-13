@@ -187,11 +187,13 @@
 
   // Episode Management
   async function startNewEpisode() {
+    const btn = document.getElementById('btn-start-episode');
     const seed = parseInt(document.getElementById('cfg-seed').value, 10) || 42;
     const budget = parseFloat(document.getElementById('cfg-budget').value) || 10.0;
     const policy = document.getElementById('cfg-policy').value || 'greedy_information_gain';
     const threshold = parseFloat(document.getElementById('cfg-threshold').value) || 0.90;
 
+    if (btn) btn.disabled = true;
     try {
       const ep = await apiPost('/api/episode/start', {
         seed,
@@ -207,11 +209,15 @@
       showToast(`Episode started with seed ${seed} under ${POLICY_NAMES_MAP[policy] || policy}.`);
     } catch (err) {
       showToast('Failed to start episode: ' + err.message, 'error');
+    } finally {
+      if (btn) btn.disabled = false;
     }
   }
 
   async function stepPolicy() {
     if (!state.currentSessionId) return;
+    const stepBtns = [document.getElementById('btn-step-policy'), document.getElementById('btn-full-step-policy')];
+    stepBtns.forEach((b) => { if (b) b.disabled = true; });
     try {
       const ep = await apiPost('/api/episode/step', { session_id: state.currentSessionId });
       state.currentEpisode = ep;
@@ -222,11 +228,15 @@
       }
     } catch (err) {
       showToast('Step error: ' + err.message, 'error');
+    } finally {
+      stepBtns.forEach((b) => { if (b) b.disabled = false; });
     }
   }
 
   async function investigateTest(testId) {
     if (!state.currentSessionId) return;
+    const invBtns = document.querySelectorAll('button[data-test]');
+    invBtns.forEach((b) => { b.disabled = true; });
     try {
       const ep = await apiPost('/api/episode/investigate', {
         session_id: state.currentSessionId,
@@ -237,31 +247,52 @@
       showToast(`Investigated ${testId}.`);
     } catch (err) {
       showToast('Investigation error: ' + err.message, 'error');
+    } finally {
+      invBtns.forEach((b) => { b.disabled = false; });
     }
   }
 
   async function runToCompletion() {
     if (!state.currentSessionId) return;
-    let ep = state.currentEpisode;
-    let guard = 0;
-    while (ep && !ep.is_terminal && guard < 15) {
-      ep = await apiPost('/api/episode/step', { session_id: state.currentSessionId });
-      state.currentEpisode = ep;
-      guard++;
+    const actionBtns = [
+      document.getElementById('btn-step-policy'),
+      document.getElementById('btn-full-step-policy'),
+      document.getElementById('btn-full-run-complete'),
+      document.getElementById('btn-reset-episode'),
+      document.getElementById('btn-full-reset')
+    ];
+    actionBtns.forEach((b) => { if (b) b.disabled = true; });
+    try {
+      let ep = state.currentEpisode;
+      let guard = 0;
+      while (ep && !ep.is_terminal && guard < 15) {
+        ep = await apiPost('/api/episode/step', { session_id: state.currentSessionId });
+        state.currentEpisode = ep;
+        guard++;
+      }
+      updateEpisodeUI();
+      showToast(`Simulation ran to completion (${ep.steps_taken} steps).`);
+    } catch (err) {
+      showToast('Run error: ' + err.message, 'error');
+    } finally {
+      actionBtns.forEach((b) => { if (b) b.disabled = false; });
     }
-    updateEpisodeUI();
-    showToast(`Simulation ran to completion (${ep.steps_taken} steps).`);
   }
 
   async function resetEpisode() {
     if (!state.currentSessionId) return;
+    const resetBtns = [document.getElementById('btn-reset-episode'), document.getElementById('btn-full-reset')];
+    resetBtns.forEach((b) => { if (b) b.disabled = true; });
     try {
       const ep = await apiPost('/api/episode/reset', { session_id: state.currentSessionId });
+      state.currentSessionId = ep.session_id;
       state.currentEpisode = ep;
       updateEpisodeUI();
       showToast('Episode reset to initial priors.');
     } catch (err) {
       showToast('Reset error: ' + err.message, 'error');
+    } finally {
+      resetBtns.forEach((b) => { if (b) b.disabled = false; });
     }
   }
 
@@ -278,8 +309,8 @@
     if (!ep) return;
 
     // KPI Cards
-    document.getElementById('kpi-total-budget').textContent = `$${ep.initial_budget.toFixed(2)}`;
-    document.getElementById('kpi-available-budget').textContent = `$${ep.remaining_budget.toFixed(2)}`;
+    document.getElementById('kpi-total-budget').textContent = `${ep.initial_budget.toFixed(2)} units`;
+    document.getElementById('kpi-available-budget').textContent = `${ep.remaining_budget.toFixed(2)} units`;
     const pct = ((ep.remaining_budget / ep.initial_budget) * 100).toFixed(0);
     document.getElementById('kpi-remaining-budget-sub').textContent = `${pct}% remaining`;
     document.getElementById('kpi-steps-taken').textContent = `${ep.steps_taken} / ${ep.max_steps}`;
@@ -417,7 +448,7 @@
           <div style="flex-grow: 1;">
             <div style="display: flex; justify-content: space-between;">
               <span class="tl-step">Step ${rec.step_index + 1}</span>
-              <span class="text-muted" style="font-size: 11px;">Cost: $${rec.cost.toFixed(2)}</span>
+              <span class="text-muted" style="font-size: 11px;">Cost: ${rec.cost.toFixed(2)} units</span>
             </div>
             <div class="tl-content">
               <strong>${rec.test_label}</strong> → outcome: <span class="tl-highlight">${rec.outcome}</span>
@@ -454,7 +485,7 @@
             <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color}; margin-right: 6px;"></span>
             <strong>${c.test_id}</strong>
           </td>
-          <td>$${c.cost.toFixed(2)}</td>
+          <td>${c.cost.toFixed(2)}</td>
           <td>${c.expected_information_gain_bits.toFixed(3)}</td>
           <td style="color: #0EA5E9; font-weight: 600;">${c.information_gain_per_cost.toFixed(3)}</td>
           <td>
@@ -506,7 +537,7 @@
               <strong>${c.label}</strong>
               <div class="text-muted" style="font-size: 10px;">ID: ${c.test_id}</div>
             </td>
-            <td>$${c.cost.toFixed(2)}</td>
+            <td>${c.cost.toFixed(2)}</td>
             <td>${c.expected_information_gain_bits.toFixed(4)} bits</td>
             <td style="color: #0EA5E9; font-weight: 700;">${c.information_gain_per_cost.toFixed(4)}</td>
             <td style="font-size: 11px; color: #475569;">${outcomesStr}</td>
@@ -541,7 +572,7 @@
     // Rationale Box
     document.getElementById('rc-policy-tag').textContent = ep.policy;
     document.getElementById('rc-status-tag').textContent = ep.is_terminal ? 'Concluded' : 'Exploring';
-    document.getElementById('rc-rem-budget').textContent = `$${ep.remaining_budget.toFixed(2)}`;
+    document.getElementById('rc-rem-budget').textContent = `${ep.remaining_budget.toFixed(2)} units`;
     document.getElementById('rc-entropy').textContent = `${ep.current_entropy_bits.toFixed(3)} bits`;
     document.getElementById('rc-max-p').textContent = `${ep.current_max_posterior.toFixed(3)}`;
     document.getElementById('rc-stop-reason').textContent = ep.stop_reason || 'None';
@@ -587,10 +618,10 @@
           <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px; border-radius: 6px; font-size: 12px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
               <strong>Step ${rec.step_index + 1}: ${rec.test_label}</strong>
-              <span style="font-family: JetBrains Mono; color: #F43F5E;">Cost: $${rec.cost.toFixed(2)}</span>
+              <span style="font-family: JetBrains Mono; color: #F43F5E;">Cost: ${rec.cost.toFixed(2)} units</span>
             </div>
             <div style="color: #475569;">
-              Observed outcome: <strong style="color: #0F172A;">${rec.outcome}</strong> | Remaining Budget: <strong>$${rec.remaining_budget.toFixed(2)}</strong>
+              Observed outcome: <strong style="color: #0F172A;">${rec.outcome}</strong> | Remaining Budget: <strong>${rec.remaining_budget.toFixed(2)} units</strong>
             </div>
           </div>
         `).join('');
@@ -675,6 +706,8 @@
   async function solveContingentPlan() {
     const budget = parseFloat(document.getElementById('cfg-budget')?.value) || 10.0;
     const threshold = parseFloat(document.getElementById('cfg-threshold')?.value) || 0.90;
+    const solveBtns = [document.getElementById('btn-solve-plan-preview'), document.getElementById('btn-solve-full-plan')];
+    solveBtns.forEach((b) => { if (b) b.disabled = true; });
 
     try {
       const plan = await apiPost('/api/plan/solve', {
@@ -692,17 +725,32 @@
 
       // Update Inspector Header
       const badge = document.getElementById('tree-status-badge');
-      if (badge) badge.textContent = plan.status;
+      if (badge) {
+        if (plan.status === 'optimal' || plan.status === 'complete') {
+          badge.className = 'badge badge-success';
+          badge.textContent = '✓ Proven Optimal';
+        } else {
+          badge.className = 'badge badge-warning';
+          badge.textContent = '⚠️ Incomplete Search';
+        }
+      }
       const expVal = document.getElementById('tree-expansions-val');
-      if (expVal) expVal.textContent = `${plan.expanded_states} states`;
+      if (expVal) {
+        expVal.textContent = plan.status === 'incomplete'
+          ? `${plan.expanded_states} / ${plan.max_state_expansions} states (Limit reached)`
+          : `${plan.expanded_states} states`;
+      }
       const utVal = document.getElementById('tree-utility-val');
       if (utVal) utVal.textContent = plan.expected_utility ? plan.expected_utility.toFixed(4) : '--';
 
       renderPlanTree(plan);
       renderPlanTreePreview(plan);
+      renderNodeInspector('root', plan);
       showToast(`Contingent plan solved (${plan.expanded_states} states expanded).`);
     } catch (err) {
       showToast('Plan solve error: ' + err.message, 'error');
+    } finally {
+      solveBtns.forEach((b) => { if (b) b.disabled = false; });
     }
   }
 
@@ -714,7 +762,7 @@
     container.innerHTML = `
       <div style="padding: 16px; width: 100%; text-align: center;">
         <div style="background: #EDE9FE; color: #6D28D9; border: 1px solid #DDD6FE; padding: 6px 12px; border-radius: 20px; display: inline-block; font-size: 12px; font-weight: 700; margin-bottom: 10px;">
-          Root Action: ${plan.policy_tree.action_label} (Cost: $${plan.policy_tree.cost.toFixed(2)})
+          Root Action: ${plan.policy_tree.action_label} (Cost: ${plan.policy_tree.cost.toFixed(2)} units)
         </div>
         <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
           ${plan.policy_tree.branches.map((b) => `
@@ -736,31 +784,58 @@
     document.getElementById('btn-goto-plan-inspector')?.addEventListener('click', () => switchView('plan-inspector'));
   }
 
+  // Helper to walk plan tree by hierarchical path string
+  function findPlanNodeByPath(root, path) {
+    if (!root || !path || path === 'root') {
+      return { node: root, breadcrumbs: [{ title: 'Root Decision', path: 'root' }] };
+    }
+    const parts = path.split('/').filter(Boolean);
+    let curr = root;
+    const breadcrumbs = [{ title: 'Root Decision', path: 'root' }];
+    let currentPath = 'root';
+
+    for (let i = 1; i < parts.length; i++) {
+      const p = parts[i];
+      if (p.startsWith('b') && curr && curr.branches) {
+        const bIdx = parseInt(p.substring(1), 10);
+        const branch = curr.branches[bIdx];
+        if (!branch) return null;
+        currentPath += `/${p}`;
+        curr = branch.child;
+        const actionLabel = curr ? (curr.action ? curr.action_label : `Stop: ${curr.terminal_label}`) : 'Empty';
+        breadcrumbs.push({
+          title: `${branch.outcome} → ${actionLabel}`,
+          path: currentPath,
+        });
+      }
+    }
+    return { node: curr, breadcrumbs };
+  }
+
   // Render Interactive Full Contingent Tree (SVG Layout)
   function renderPlanTree(plan) {
     const container = document.getElementById('plan-tree-canvas-container');
     if (!container || !plan || !plan.policy_tree) return;
 
     const root = plan.policy_tree;
-    const svgW = 960;
-    const svgH = 540;
+    const svgW = 1000;
+    const svgH = 580;
 
-    // Build hierarchical layout coordinates
     let nodesSvg = '';
     let linksSvg = '';
 
     const rootX = svgW / 2;
     const rootY = 50;
 
-    // Draw Root Node
+    // Root Node
     nodesSvg += `
-      <g class="tree-node" onclick="window.selectPlanNode('root')" transform="translate(${rootX}, ${rootY})">
-        <rect x="-85" y="-22" width="170" height="44" rx="22" fill="#EDE9FE" stroke="#8B5CF6" stroke-width="2" />
+      <g class="tree-node" onclick="window.selectPlanNode('root')" transform="translate(${rootX}, ${rootY})" style="cursor: pointer;">
+        <rect x="-95" y="-22" width="190" height="44" rx="22" fill="#EDE9FE" stroke="#8B5CF6" stroke-width="2" />
         <text y="-2" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#5B21B6">
           ${root.action_label}
         </text>
         <text y="14" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#7C3AED">
-          Cost: $${root.cost.toFixed(2)} | Exp: ${plan.expanded_states}
+          Cost: ${root.cost.toFixed(2)} units | Exp: ${plan.expanded_states}
         </text>
       </g>
     `;
@@ -771,12 +846,13 @@
     root.branches.forEach((branch, bIdx) => {
       const childX = (bIdx + 1) * branchSpacing;
       const childY = 190;
+      const childPath = `root/b${bIdx}`;
 
       // Link from Root to Branch
       linksSvg += `
         <path d="M ${rootX} ${rootY + 22} C ${rootX} ${rootY + 80}, ${childX} ${childY - 60}, ${childX} ${childY - 20}" 
               class="tree-link" />
-        <rect x="${(rootX + childX) / 2 - 28}" y="${(rootY + childY) / 2 - 12}" width="56" height="20" rx="10" fill="#FEF3C7" stroke="#F59E0B" />
+        <rect x="${(rootX + childX) / 2 - 32}" y="${(rootY + childY) / 2 - 12}" width="64" height="20" rx="10" fill="#FEF3C7" stroke="#F59E0B" />
         <text x="${(rootX + childX) / 2}" y="${(rootY + childY) / 2 + 2}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#92400E">
           ${branch.outcome} (${(branch.probability * 100).toFixed(0)}%)
         </text>
@@ -789,11 +865,11 @@
         const fillColor = isTerminal ? '#ECFDF5' : '#E0F2FE';
         const strokeColor = isTerminal ? '#10B981' : '#0EA5E9';
         const label = isTerminal ? `Stop: ${child.terminal_label}` : child.action_label;
-        const sub = isTerminal ? `Utility: ${child.terminal_value.toFixed(3)}` : `Cost: $${child.cost.toFixed(2)}`;
+        const sub = isTerminal ? `Utility: ${child.terminal_value.toFixed(3)}` : `Cost: ${child.cost.toFixed(2)} units`;
 
         nodesSvg += `
-          <g class="tree-node" onclick="window.selectPlanNode('b_${bIdx}')" transform="translate(${childX}, ${childY})">
-            <rect x="-80" y="-22" width="160" height="44" rx="12" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1.5" />
+          <g class="tree-node" onclick="window.selectPlanNode('${childPath}')" transform="translate(${childX}, ${childY})" style="cursor: pointer;">
+            <rect x="-85" y="-22" width="170" height="44" rx="12" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1.5" />
             <text y="-2" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#0F172A">
               ${label}
             </text>
@@ -803,35 +879,58 @@
           </g>
         `;
 
-        // If non-terminal, render secondary terminal leaves
-        if (!isTerminal && child.branches) {
+        // Level 2 Sub-decisions / Grandchildren
+        if (child.branches && child.branches.length > 0) {
           const grandCount = child.branches.length;
-          const grandSpacing = 160 / Math.max(1, grandCount);
+          const grandSpan = 220;
+          const grandSpacing = grandSpan / Math.max(1, grandCount);
 
           child.branches.forEach((gb, gIdx) => {
-            const grandX = childX + (gIdx - (grandCount - 1) / 2) * 120;
+            const grandX = childX + (gIdx - (grandCount - 1) / 2) * grandSpacing;
             const grandY = 360;
+            const grandPath = `${childPath}/b${gIdx}`;
 
             linksSvg += `
               <path d="M ${childX} ${childY + 22} C ${childX} ${childY + 60}, ${grandX} ${grandY - 60}, ${grandX} ${grandY - 18}" 
                     class="tree-link" />
-              <text x="${(childX + grandX) / 2}" y="${(childY + grandY) / 2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#F59E0B">
+              <rect x="${(childX + grandX) / 2 - 24}" y="${(childY + grandY) / 2 - 10}" width="48" height="18" rx="9" fill="#FFFBEB" stroke="#FBBF24" />
+              <text x="${(childX + grandX) / 2}" y="${(childY + grandY) / 2 + 2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#92400E">
                 ${gb.outcome}
               </text>
             `;
 
             const gChild = gb.child;
-            nodesSvg += `
-              <g class="tree-node" onclick="window.selectPlanNode('gb_${bIdx}_${gIdx}')" transform="translate(${grandX}, ${grandY})">
-                <rect x="-65" y="-18" width="130" height="36" rx="8" fill="#ECFDF5" stroke="#10B981" stroke-width="1.5" />
-                <text y="-1" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="#065F46">
-                  Stop: ${gChild?.terminal_label || 'Decide'}
-                </text>
-                <text y="12" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#047857">
-                  Val: ${gChild ? gChild.terminal_value.toFixed(2) : '--'}
-                </text>
-              </g>
-            `;
+            if (gChild) {
+              const gIsTerminal = !gChild.action;
+              const gFill = gIsTerminal ? '#ECFDF5' : '#EFF6FF';
+              const gStroke = gIsTerminal ? '#10B981' : '#3B82F6';
+              const gLabel = gIsTerminal ? `Stop: ${gChild.terminal_label}` : gChild.action_label;
+              const gSub = gIsTerminal ? `Val: ${gChild.terminal_value.toFixed(2)}` : `Cost: ${gChild.cost.toFixed(1)}u`;
+
+              nodesSvg += `
+                <g class="tree-node" onclick="window.selectPlanNode('${grandPath}')" transform="translate(${grandX}, ${grandY})" style="cursor: pointer;">
+                  <rect x="-70" y="-18" width="140" height="36" rx="8" fill="${gFill}" stroke="${gStroke}" stroke-width="1.5" />
+                  <text y="-1" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="#0F172A">
+                    ${gLabel}
+                  </text>
+                  <text y="12" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#475569">
+                    ${gSub}
+                  </text>
+                </g>
+              `;
+
+              // If level 2 child has further descendants (depth 3+), render an expandable subtree indicator
+              if (!gIsTerminal && gChild.branches && gChild.branches.length > 0) {
+                nodesSvg += `
+                  <g class="tree-node" onclick="window.selectPlanNode('${grandPath}')" transform="translate(${grandX}, ${grandY + 36})" style="cursor: pointer;">
+                    <rect x="-55" y="-10" width="110" height="20" rx="10" fill="#FEF3C7" stroke="#F59E0B" stroke-dasharray="3 3" />
+                    <text y="3" text-anchor="middle" font-family="Inter" font-size="9" font-weight="600" fill="#B45309">
+                      +${gChild.branches.length} branches (Inspect)
+                    </text>
+                  </g>
+                `;
+              }
+            }
           });
         }
       }
@@ -851,40 +950,76 @@
   }
 
   // Render Node Inspector Panel
-  function renderNodeInspector(key, plan) {
+  function renderNodeInspector(path, plan) {
     const body = document.getElementById('node-inspector-body');
     if (!body || !plan || !plan.policy_tree) return;
 
-    let node = plan.policy_tree;
-    let title = 'Root Decision Node';
+    const lookup = findPlanNodeByPath(plan.policy_tree, path);
+    if (!lookup || !lookup.node) return;
 
-    if (key.startsWith('gb_')) {
-      const parts = key.split('_');
-      const bIdx = parseInt(parts[1], 10);
-      const gIdx = parseInt(parts[2], 10);
-      const branch = plan.policy_tree.branches[bIdx];
-      const gBranch = branch?.child?.branches[gIdx];
-      node = gBranch?.child;
-      title = `Terminal Decision Node (${branch?.outcome} → ${gBranch?.outcome})`;
-    } else if (key.startsWith('b_')) {
-      const idx = parseInt(key.split('_')[1], 10);
-      const branch = plan.policy_tree.branches[idx];
-      node = branch?.child;
-      title = `Branch Node (${branch?.outcome} outcome)`;
-    }
+    const node = lookup.node;
+    const breadcrumbs = lookup.breadcrumbs;
+    const isTerminal = !node.action;
 
-    if (!node) return;
+    const breadcrumbsHtml = `
+      <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; font-size: 11px;">
+        ${breadcrumbs.map((bc, idx) => `
+          <button class="btn btn-xs ${idx === breadcrumbs.length - 1 ? 'btn-primary' : 'btn-outline'}" 
+                  onclick="window.selectPlanNode('${bc.path}')">
+            ${bc.title}
+          </button>
+          ${idx < breadcrumbs.length - 1 ? '<span style="color: #94A3B8; align-self: center;">→</span>' : ''}
+        `).join('')}
+      </div>
+    `;
+
+    const branchesHtml = (node.branches && node.branches.length > 0) ? `
+      <div style="margin-top: 14px; border-top: 1px solid #E2E8F0; padding-top: 10px;">
+        <span class="nd-lbl" style="font-weight: 700; display: block; margin-bottom: 6px;">Outcome Branches (${node.branches.length}):</span>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          ${node.branches.map((b, bIdx) => {
+            const childTarget = `${path}/b${bIdx}`;
+            const childLabel = b.child ? (b.child.action ? b.child.action_label : `Stop: ${b.child.terminal_label}`) : 'Empty';
+            return `
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 6px 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                <div>
+                  <strong style="color: #F59E0B;">${b.outcome}</strong> 
+                  <span style="color: #64748B;">(${(b.probability * 100).toFixed(1)}%)</span>
+                  <span style="color: #0F172A; margin-left: 6px;">→ ${childLabel}</span>
+                </div>
+                <button class="btn btn-xs btn-outline" onclick="window.selectPlanNode('${childTarget}')">
+                  Inspect Sub-decision →
+                </button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    ` : '';
 
     body.innerHTML = `
       <div class="node-detail-card">
-        <h4 style="font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 8px;">${title}</h4>
+        ${breadcrumbsHtml}
+        <h4 style="font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 8px;">
+          ${isTerminal ? 'Terminal Decision Node' : 'Investigation Decision Node'}
+        </h4>
+        <div class="nd-row">
+          <span class="nd-lbl">Decision Kind</span>
+          <span class="nd-val" style="color: ${isTerminal ? '#10B981' : '#0EA5E9'}; font-weight: 700;">
+            ${isTerminal ? 'Terminal Stop' : 'Conduct Investigation'}
+          </span>
+        </div>
         <div class="nd-row">
           <span class="nd-lbl">Planned Action</span>
-          <span class="nd-val" style="color: #F43F5E;">${node.action_label || 'Terminal Decision'}</span>
+          <span class="nd-val" style="color: #F43F5E;">${node.action_label || 'Stop / Decide'}</span>
+        </div>
+        <div class="nd-row">
+          <span class="nd-lbl">Investigation Cost</span>
+          <span class="nd-val">${node.cost ? node.cost.toFixed(2) + ' units' : '0.00 units'}</span>
         </div>
         <div class="nd-row">
           <span class="nd-lbl">Remaining Budget</span>
-          <span class="nd-val">$${node.remaining_budget.toFixed(2)}</span>
+          <span class="nd-val">${node.remaining_budget.toFixed(2)} units</span>
         </div>
         <div class="nd-row">
           <span class="nd-lbl">Terminal Decision</span>
@@ -895,18 +1030,25 @@
           <span class="nd-val">${node.terminal_value.toFixed(4)}</span>
         </div>
         <div class="nd-row">
-          <span class="nd-lbl">Branch Value</span>
+          <span class="nd-lbl">Bellman Branch Value</span>
           <span class="nd-val">${node.value.toFixed(4)}</span>
         </div>
-        <div style="margin-top: 8px;">
-          <span class="nd-lbl" style="font-weight: 600; display: block; margin-bottom: 4px;">Candidate Action Values:</span>
-          ${node.action_values.map((av) => `
-            <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0;">
-              <span>${av.action}</span>
-              <span style="font-family: JetBrains Mono; font-weight: 600;">${av.value.toFixed(4)}</span>
-            </div>
-          `).join('')}
+        <div class="nd-row">
+          <span class="nd-lbl">Performed Tests</span>
+          <span class="nd-val" style="font-size: 11px;">${node.performed && node.performed.length ? node.performed.join(', ') : 'None'}</span>
         </div>
+        ${node.action_values && node.action_values.length > 0 ? `
+          <div style="margin-top: 8px;">
+            <span class="nd-lbl" style="font-weight: 600; display: block; margin-bottom: 4px;">Candidate Action Values:</span>
+            ${node.action_values.map((av) => `
+              <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0;">
+                <span>${av.action}</span>
+                <span style="font-family: JetBrains Mono; font-weight: 600;">${av.value.toFixed(4)}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        ${branchesHtml}
       </div>
     `;
   }
@@ -966,7 +1108,7 @@
       points.forEach((p) => {
         dotsSvg += `
           <circle cx="${getX(p.budget)}" cy="${getY(p.overall_accuracy)}" r="4" fill="${color}">
-            <title>${policy} at $${p.budget}: ${(p.overall_accuracy * 100).toFixed(1)}%</title>
+            <title>${policy} at budget ${p.budget}: ${(p.overall_accuracy * 100).toFixed(1)}%</title>
           </circle>
         `;
       });
@@ -999,7 +1141,7 @@
       gridSvg += `
         <line x1="${x}" y1="${height - padding.bottom}" x2="${x}" y2="${height - padding.bottom + 5}" stroke="#CBD5E1" />
         <text x="${x}" y="${height - padding.bottom + 18}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#64748B">
-          $${b.toFixed(0)}
+          ${b.toFixed(0)} units
         </text>
       `;
     });
@@ -1012,7 +1154,7 @@
         ${legendSvg}
         <!-- Axis labels -->
         <text x="${padding.left + chartW / 2}" y="${height - 6}" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#475569">
-          Investigation Budget ($)
+          Investigation Budget (Cost Units)
         </text>
         <text transform="rotate(-90)" x="${-(padding.top + chartH / 2)}" y="18" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#475569">
           Classification Accuracy
@@ -1046,7 +1188,7 @@
         name: 'Greedy Info Gain',
         horizon: '1-step (myopic)',
         costAware: 'Yes (EIG/Cost)',
-        desc: 'Maximizes immediate Shannon information gain per dollar.',
+        desc: 'Maximizes immediate Shannon information gain per cost unit.',
       },
       {
         id: 'contingent_optimal',
@@ -1060,7 +1202,7 @@
     tbody.innerHTML = rows.map((r) => {
       const curvePts = data.curve_data[r.id] || [];
       const pt = curvePts[curvePts.length - 1] || {};
-      const cost = pt.mean_cost ? `$${pt.mean_cost.toFixed(2)}` : '--';
+      const cost = pt.mean_cost ? `${pt.mean_cost.toFixed(2)} units` : '--';
       const tests = pt.mean_tests ? pt.mean_tests.toFixed(1) : '--';
       const acc = pt.overall_accuracy !== undefined ? `${(pt.overall_accuracy * 100).toFixed(0)}%` : '--';
 
@@ -1129,7 +1271,7 @@
     document.getElementById('esc-overall-acc').textContent = `${(meanAcc * 100).toFixed(1)}%`;
     document.getElementById('esc-resolved-acc').textContent = `${(meanResAcc * 100).toFixed(1)}%`;
     document.getElementById('esc-unresolved-rate').textContent = `${((1 - meanResRate) * 100).toFixed(1)}%`;
-    document.getElementById('esc-mean-cost').textContent = `$${meanCost.toFixed(2)}`;
+    document.getElementById('esc-mean-cost').textContent = `${meanCost.toFixed(2)} units`;
     document.getElementById('esc-mean-tests').textContent = meanTests.toFixed(1);
     document.getElementById('esc-mean-entropy').textContent = `${meanEnt.toFixed(3)} bits`;
 
@@ -1144,7 +1286,7 @@
           <td style="color: #F43F5E; font-weight: 700;">${((s.overall_accuracy || 0) * 100).toFixed(1)}%</td>
           <td>${((s.resolved_accuracy || 0) * 100).toFixed(1)}%</td>
           <td>${((s.resolution_rate || 0) * 100).toFixed(1)}%</td>
-          <td>$${(s.mean_cost || 0).toFixed(2)}</td>
+          <td>${(s.mean_cost || 0).toFixed(2)}</td>
           <td>${(s.mean_investigations || 0).toFixed(1)}</td>
           <td>${(s.mean_final_entropy_bits || 0).toFixed(3)}</td>
         </tr>
@@ -1179,7 +1321,7 @@
           ${e.is_correct ? '✓ Yes' : '✗ No'}
         </td>
         <td>${e.is_resolved ? 'Yes' : 'No'}</td>
-        <td>$${e.total_cost.toFixed(2)}</td>
+        <td>${e.total_cost.toFixed(2)}</td>
         <td>${e.investigations_count}</td>
         <td style="font-size: 11px; color: #475569;">${e.performed_investigations.join(', ') || 'None'}</td>
         <td style="font-size: 11px;">${e.termination_reason}</td>
@@ -1219,7 +1361,7 @@
         <tr>
           <td><code>${i.id}</code></td>
           <td><strong>${i.label}</strong></td>
-          <td style="font-family: JetBrains Mono; color: #F43F5E; font-weight: 600;">$${i.cost.toFixed(2)}</td>
+          <td style="font-family: JetBrains Mono; color: #F43F5E; font-weight: 600;">${i.cost.toFixed(2)} units</td>
           <td>${i.outcomes.join(', ')}</td>
           <td style="font-size: 11px; color: #64748B;">
             ${Object.keys(i.likelihoods).length} hypotheses mapped over ${i.outcomes.length} outcomes
@@ -1233,8 +1375,8 @@
     if (!state.config) return;
     document.getElementById('qs-hypotheses').textContent = state.config.hypotheses.length;
     document.getElementById('qs-investigations').textContent = state.config.investigations.length;
-    document.getElementById('qs-min-cost').textContent = `$${state.config.planner_defaults.min_cost.toFixed(2)}`;
-    document.getElementById('qs-max-cost').textContent = `$${state.config.planner_defaults.max_cost.toFixed(2)}`;
+    document.getElementById('qs-min-cost').textContent = `${state.config.planner_defaults.min_cost.toFixed(2)}`;
+    document.getElementById('qs-max-cost').textContent = `${state.config.planner_defaults.max_cost.toFixed(2)}`;
   }
 
   // =========================================================================

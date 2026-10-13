@@ -109,6 +109,7 @@ def summarize_results(
     - mean_cost: total cost across attempted episodes / attempted episodes
     - mean_investigations: total investigations / attempted episodes
     - mean_final_entropy_bits: average entropy across episodes with finite entropy
+    - mean_planner_expansions: total planner expansions / episodes with planner expansion counts
     """
     n = len(results)
     if policy is not None:
@@ -178,10 +179,12 @@ def summarize_results(
         if _exact(r.total_cost) > _exact(r.initial_budget)
     )
 
-    has_expansions = any(len(r.planner_expansion_counts) > 0 for r in results)
-    if has_expansions:
-        total_expansions = sum(sum(r.planner_expansion_counts) for r in results)
-        mean_expansions = total_expansions / n
+    planning_episodes = [
+        r for r in results if len(r.planner_expansion_counts) > 0
+    ]
+    if planning_episodes:
+        total_expansions = sum(sum(r.planner_expansion_counts) for r in planning_episodes)
+        mean_expansions = total_expansions / len(planning_episodes)
     else:
         total_expansions = None
         mean_expansions = None

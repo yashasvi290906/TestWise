@@ -329,6 +329,15 @@ class TestMetricCalculationsAndDenominators(unittest.TestCase):
         self.assertEqual(s_plan.total_planner_expansions, 350)
         self.assertEqual(s_plan.mean_planner_expansions, 175.0)
 
+    def test_planner_expansion_denominator_uses_planning_episodes(self):
+        # Mix of 1 planning episode (expansions 150) and 1 non-planning episode (expansions ())
+        r_plan = make_dummy_result(expansions=(100, 50))
+        r_base = make_dummy_result(expansions=())
+        summary = summarize_results([r_plan, r_base])
+        self.assertEqual(summary.total_planner_expansions, 150)
+        # Denominator must be the 1 planning episode, not 2 attempted episodes
+        self.assertEqual(summary.mean_planner_expansions, 150.0)
+
     def test_metrics_are_not_hardcoded(self):
         # Verify dynamic change
         r1 = make_dummy_result(cost=1.0)
